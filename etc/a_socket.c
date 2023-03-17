@@ -12,7 +12,7 @@
 #include<winsock2.h>
 #endif
 
-int socket_(char *ip_set,int port){
+int main(void){
     #ifdef __linux__
     int sockfd, n;
     #else
@@ -24,8 +24,12 @@ int socket_(char *ip_set,int port){
     char sendline[1000];
     char recvline[1000];
     int n;
-    #endif
+    DWORD recvTimeout=5000;
 
+    setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char*)&recvTimeout, sizeof(recvTimeout)); //socket recv 3초 설정
+
+
+    #endif
     #ifdef __linux__
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0){
@@ -46,8 +50,8 @@ int socket_(char *ip_set,int port){
     #endif
     memset(&servaddr,0,sizeof(servaddr));
     servaddr.sin_family=AF_INET;
-    servaddr.sin_addr.s_addr=inet_addr(ip_set);
-    servaddr.sin_port=htons(port);
+    servaddr.sin_addr.s_addr=inet_addr("192.168.168.128");
+    servaddr.sin_port=htons(22);
 
     //send a syn packet to initiate the connection
     #ifdef __linux__
@@ -96,7 +100,7 @@ int socket_(char *ip_set,int port){
         WSACleanup();
         return 1;
     }
-    if(n>0){
+    if(n>=0){
         //send an ack packet to complete the connection
         strcpy(sendline,"ACK");
         send(sockfd,sendline,strlen(sendline)+1,0);
@@ -112,37 +116,4 @@ int socket_(char *ip_set,int port){
     WSACleanup();
     return 0;
     #endif
-}
-
-int main(){
-
-    int port_ex =0; // 1 : 1~1024 , 2 : 1 ~ 65535
-    char ip_set[16];
-
-    FILE *fp;
-    fp = fopen("config.conf","r");
-
-    if (fp==NULL){
-        printf("failed!\n");
-    }
-
-    fscanf(fp,"%s %d",ip_set,&port_ex);
-    printf("%s %d",ip_set,port_ex);
-    
-    if (port_ex==1){
-        for(int i=1; i<=1024; i++){
-            socket_(ip_set,i);
-        }
-    }else if (port_ex==2){
-        for(int i=1; i<=65535; i++){
-            socket_(ip_set,i);
-        }
-    }else{
-        printf("no port num \n");
-        return 0;
-    }
-    
-
-    return 0;
-
 }
